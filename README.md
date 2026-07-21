@@ -4,87 +4,148 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Open Source](https://img.shields.io/badge/RustDesk-Open%20Source-orange.svg)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blueviolet.svg)
+![Active Directory](https://img.shields.io/badge/Active%20Directory-GPO-0078D4.svg)
 
-Solução automatizada para mapeamento dinâmico de IDs da ferramenta **Open Source RustDesk**, integrando contas do **Active Directory (AD)** e gerando um painel web interativo com checagem de status de rede em tempo real (**ICMP Ping**).
+Solução corporativa *Open Source* para **instalação, configuração centralizada, inventário dinâmico e monitoramento de status em tempo real (ICMP)** da ferramenta de suporte remoto **RustDesk** integrada ao **Active Directory (AD)**.
 
 ---
 
 ## 🚀 Sobre o Projeto & Desafio Resolvido
 
-O **RustDesk** é uma das melhores alternativas *Open Source* e *Self-Hosted* para suporte remoto corporativo. Contudo, em ambientes enterprise com trocas frequentes de turnos e múltiplos usuários compartilhando as mesmas estações de trabalho (como em ilhas de edição, emissoras de TV, rádios e operação), rastrear **qual ID do RustDesk pertence a qual computador e usuário ativo** pode ser um grande gargalo operacional.
+Em ambientes corporativos com múltiplos turnos e estações de trabalho compartilhadas por diversos usuários (como emissoras de TV, rádios, centrais de atendimento e ilhas de edição), rastrear **qual ID do RustDesk pertence a qual máquina e usuário ativo** é um grande gargalo operacional.
 
-### 💡 A Solução (v1.0):
-Esta automação elimina a necessidade de planilhas manuais ou consultas individuais, implementando:
-1. **Coleta Automática via GPO:** Toda vez que um colaborador faz logon no domínio, um script em PowerShell coleta as credenciais da sessão, a OU/Setor e o ID do RustDesk local, registrando em um repositório centralizado.
-2. **Dashboard Web Interativo:** Um script no servidor processa os registros, executa testes de conectividade (*Ping*) em tempo real e compila um painel HTML moderno com busca instantânea e disparo direto do cliente remoto em 1 clique (`rustdesk://`).
+### 💡 Como esta automação resolve o problema:
+1. **Implantação Silenciosa via Boot (GPO):** Instala o RustDesk, limpa caches antigos, aplica a chave/servidor privado do seu RustDesk Server, define a senha administrativa fixa e exporta o ID local de forma limpa.
+2. **Coleta Multi-usuário via Logon (GPO):** Associa o ID do RustDesk ao usuário logado no momento e captura a Unidade Organizacional (OU/Setor) diretamente do AD, registrando histórico completo de revezamento.
+3. **Painel Web Interativo com Ping em Tempo Real:** Um script no servidor processa os dados, valida a disponibilidade de rede (*Live ICMP Ping*) e compila um painel HTML moderno com busca dinâmica, filtros por setor e conexão em 1 clique via protocolo nativo (`rustdesk://`).
 
 ---
 
 ## 🏗️ Arquitetura da Solução
 
 ```text
- [ Computador do Usuário ]
+  [ Estação de Trabalho ]
            │
-           ▼ (Logon do Usuário via GPO)
- [ Script: Coletar-RustDesk.ps1 ] 
+           ├─► (Boot da Máquina / GPO Startup)
+           │     └─► Run: 1-Instalador-Configurador.ps1
+           │           ├─ Instala/Atualiza RustDesk
+           │           ├─ Configura Server Privado + Senha Fixa
+           │           └─ Salva ID em C:\ProgramData\RustDeskID.txt
            │
-           ▼ (Grava registro .txt)
- [ Repositório Central / Share de Dados ] 
+           └─► (Logon do Usuário / GPO Logon)
+                 └─► Run: 2-Coletor-Dados.ps1
+                       ├─ Captura: Computador + Usuário + Setor (OU) + ID Local
+                       └─ Grava arquivo: \\SERVIDOR\Compartilhamento\Dados\PC_USUARIO.txt
+
+  [ Servidor Central (Windows Server) ]
            │
-           ▼ (Execução Periódica / Task Scheduler)
- [ Script Servidor: Gerar-Painel.ps1 ] ──► (Validação ICMP / Ping em Tempo Real)
+           ├─► (Task Scheduler - A cada 15 Minutos)
+           │     └─► Run: 3-Gerador-Painel.ps1
+           │           ├─ Lê todos os arquivos .txt da pasta \Dados
+           │           ├─ Executa teste de conectividade (Ping ICMP) em tempo real
+           │           └─ Compila o arquivo estático painel.html
            │
-           ▼ (Gera HTML Dinâmico)
- [ 🌐 Painel Web da Equipe de TI ] ──► (Conectar via rustdesk://ID)
+           └─► [ 🌐 Painel Web de TI ] ──► (Dispara acesso via rustdesk://[ID])
 ```
 
 ---
 
-## 🔍 Funcionalidades & Destaques
-
-- 🔓 **100% Open Source Architecture:** Baseado na infraestrutura do RustDesk sem custo de licenciamento.
-- 👥 **Mapeamento Multi-usuário:** Preserva o histórico de todos os colaboradores que utilizam a mesma máquina, garantindo auditabilidade.
-- 🟢 **Status em Tempo Real (Live Ping):** Indicador visual (*Online* / *Offline*) atualizado automaticamente a cada ciclo do gerador.
-- 🔍 **Busca & Filtros Dinâmicos:** Filtro instantâneo em JavaScript por Nome da Máquina, Usuário, ID ou Setor/OU.
-- ⚡ **Acesso em 1 Clique:** Integração nativa com a URI Protocol (`rustdesk://[ID]`), disparando o acesso remoto direto no aplicativo do técnico.
-- 🗂️ **Zero Banco de Dados (v1.0):** Arquitetura ultraleve baseada em arquivos e execução nativa em PowerShell.
-
----
-
-## 💻 Tech Stack
-
-| Categoria | Tecnologia |
-| :--- | :--- |
-| **Acesso Remoto** | RustDesk (Open Source Remote Desktop) |
-| **Automação & Scripting** | PowerShell 5.1+ / Active Directory Module |
-| **Gerenciamento de Política** | Group Policy Objects (GPO) |
-| **Frontend / Dashboard** | HTML5, CSS3 Moderno, JavaScript (Vanilla) |
-| **Protocolos de Rede** | ICMP (Ping), SMB/CIFS, Custom URI Scheme (`rustdesk://`) |
-
----
-
-## 🛠️ Estrutura do Repositório
+## 📂 Estrutura do Repositório
 
 ```text
 rustdesk-ad-mapping-panel/
 │
-├── 📜 README.md
-├── 📂 gpo/
-│   └── 📜 Coletar-RustDesk.ps1     # Script executado no logon do usuário (GPO)
-└── 📂 server/
-    └── 📜 Gerar-Painel.ps1         # Script do servidor (Ping + Gerador HTML)
+├── 📜 README.md                            # Documentação completa do projeto
+│
+├── 📂 GPO-Computer/
+│   └── 📜 1-Instalador-Configurador.ps1    # Script de Boot (Instalação + Server + ID)
+│
+├── 📂 GPO-User/
+│   └── 📜 2-Coletor-Dados.ps1              # Script de Logon (Mapeamento AD + SMB)
+│
+└── 📂 Servidor/
+    ├── 📜 3-Gerador-Painel.ps1             # Script Gerador (Ping + HTML Engine)
+    └── 📜 Task-Painel.xml                  # Template de importação para o Task Scheduler
 ```
 
 ---
 
-## 🗺️ Evolução e Roadmap (v2.0)
+## 🛠️ Guia de Implantação Passo a Passo
 
-Como esta é a **primeira versão (v1.0)** em formato de scripts operacionais, a próxima fase do projeto prevê a migração para uma arquitetura moderna de microsserviços:
+### 1️⃣ Pré-requisitos & Permissões da Pasta de Rede
+Crie uma pasta compartilhada na sua rede (ex: `\\SERVIDOR\Compartilhamento\`) com duas subpastas:
+* `\Instalador` — Armazene o executável oficial do RustDesk.
+* `\Dados` — Local onde os registros `.txt` dos clientes serão salvos.
 
-- [ ] **Backend em Python (FastAPI):** Substituição do gerador estático por uma API REST em Python.
-- [ ] **Frontend em React + Tailwind CSS:** Interface em modo escuro (*Dark Glossy*) com gráficos de uso por departamento.
-- [ ] **WebSockets / Server-Sent Events:** Atualização do status de ping em tempo real sem necessidade de re-renderizar o arquivo HTML.
-- [ ] **Notificações Automáticas:** Bot de integração com WPP para alertas de novas máquinas na rede.
+> 🔒 **Permissões de Compartilhamento/NTFS na pasta `\Dados`:**
+> * **Domain Computers (Computadores do Domínio):** Leitura.
+> * **Domain Users (Usuários do Domínio):** Modificar / Gravidade (Escrita).
+
+---
+
+### 2️⃣ Configurar a GPO de Computador (Boot / Startup)
+Este script garante a instalação do programa e a configuração da máquina antes mesmo do usuário fazer login.
+
+1. Abra o **Group Policy Management console (`gpmc.msc`)**.
+2. Crie ou edite uma GPO vinculada à OU das suas máquinas.
+3. Navegue até:  
+   `Configuração do Computador` ➔ `Políticas` ➔ `Configurações do Windows` ➔ `Scripts (Inicialização/Encerramento)` ➔ `Inicialização (Startup)`.
+4. Adicione o script `1-Instalador-Configurador.ps1`.
+5. **Ajuste as Variáveis** no topo do script:
+   ```powershell
+   $PastaRedeInstalador = "\\SEU-SERVIDOR\SHARE\Instalador"
+   $ServidorRustDesk    = "remote.seudominio.com"
+   $ChavePublica        = "SUA_CHAVE_PUBLICA_AQUI"
+   $SenhaFixaAcesso     = "SuaSenhaForte@123"
+   ```
+
+---
+
+### 3️⃣ Configurar a GPO de Usuário (Logon)
+Este script roda no contexto do usuário que acabou de logar, capturando a conta corporativa e o setor (OU) no AD.
+
+1. Na mesma GPO (ou em uma GPO vinculada à OU de Usuários), navegue até:  
+   `Configuração do Usuário` ➔ `Políticas` ➔ `Configurações do Windows` ➔ `Scripts (Logon/Logoff)` ➔ `Logon`.
+2. Adicione o script `2-Coletor-Dados.ps1` com o parâmetro de execução `-ExecutionPolicy Bypass`.
+3. **Ajuste a Variável** no topo do script:
+   ```powershell
+   $PastaDadosRede = "\\SEU-SERVIDOR\SHARE\Dados"
+   ```
+
+---
+
+### 4️⃣ Configurar o Gerador de Painel no Servidor
+O gerador compila os dados coletados e valida o status online/offline das estações.
+
+1. Salve o script `3-Gerador-Painel.ps1` em uma pasta no seu servidor.
+2. Edite os caminhos de origem e destino no script:
+   ```powershell
+   $PastaDados  = "\\SEU-SERVIDOR\SHARE\Dados"
+   $CaminhoHtml = "\\SEU-SERVIDOR\SHARE\painel.html"
+   ```
+3. Abra o **Agendador de Tarefas (*Task Scheduler*)** do Windows Server.
+4. Clique em **Importar Tarefa...** e selecione o arquivo `Task-Painel.xml`.
+5. Altere o usuário de execução da tarefa para uma conta com privilégios de leitura na rede e marque a opção **"Executar com privilégios máximos"**.
+
+---
+
+## 🖥️ Funcionalidades do Dashboard Web
+
+- 🟢 **Indicador de Status (ICMP Ping):** Bolinha verde (*Online*) se a máquina responde ao ping na rede local; vermelha (*Offline*) se estiver desligada.
+- 🔍 **Busca Global Instantânea:** Campo de texto livre para buscar simultaneamente por nome da máquina, nome do usuário, setor ou ID.
+- 📁 **Filtro por Departamento / Setor:** Dropdown populado automaticamente de acordo com as OUs do Active Directory.
+- ⚡ **Acesso em 1 Clique (`rustdesk://`):** Botão "Conectar" aciona a protocolo personalizado do RustDesk, abrindo a sessão remota no app local do técnico sem precisar digitar o ID manualmente.
+
+---
+
+## 🗺️ Roadmap de Evolução (v2.0)
+
+A próxima fase deste projeto contempla a evolução da arquitetura para um modelo moderno de microsserviços:
+
+- [ ] **Backend em Python (FastAPI):** API REST assíncrona para leitura de arquivos e ping concorrente em alta performance.
+- [ ] **Frontend Moderno em React + Tailwind CSS:** Interface responsiva em Dark Mode com gráficos de uso por departamento.
+- [ ] **WebSockets / Server-Sent Events:** Atualização de status de conectividade em tempo real sem reload do HTML.
+- [ ] **Bot de Alertas:** Integração com Webhooks (Microsoft Teams / WhatsApp) para notificar sobre novas máquinas conectadas.
 
 ---
 
