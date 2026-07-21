@@ -1,47 +1,84 @@
 # =========================================================================
-# SCRIPT 3: GERADOR DO PAINEL WEB DO RUSTDESK
+# SCRIPT 3: GERADOR DO PAINEL WEB DO RUSTDESK (COM DARK MODE & PING)
 # =========================================================================
 
 # --- [ BLOCO DE CONFIGURAÇÃO - ALTERE AQUI ] ---
-$PastaDados  = "\\SERVIDOR\Compartilhamento\Dados"
-$CaminhoHtml = "\\SERVIDOR\Compartilhamento\painel.html"
-$TituloPainel = "Painel de Controle - RustDesk"
+$PastaDados   = "\\SEU-SERVIDOR\SHARE\Dados"
+$CaminhoHtml  = "\\SEU-SERVIDOR\SHARE\painel.html"
+$TituloPainel = "Painel de Controle - RustDesk AD"
 # -----------------------------------------------
 
-# Cabeçalho do HTML com CSS
+# Cabeçalho do HTML com CSS Suportando Modo Claro e Escuro
 $HtmlHeader = @"
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>$TituloPainel</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #333; margin: 20px; }
-        h1 { color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; margin-bottom: 15px; }
-        .painel-controles { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .info-status { font-size: 14px; color: #4b5563; }
+        :root[data-theme="dark"] {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --th-bg: #1e3a8a;
+            --th-text: #ffffff;
+            --row-hover: #334155;
+            --input-bg: #0f172a;
+        }
+
+        :root[data-theme="light"] {
+            --bg-body: #f4f6f9;
+            --bg-card: #ffffff;
+            --text-main: #333333;
+            --text-muted: #4b5563;
+            --border-color: #cbd5e1;
+            --th-bg: #1e3a8a;
+            --th-text: #ffffff;
+            --row-hover: #f1f5f9;
+            --input-bg: #ffffff;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 20px; transition: background-color 0.3s, color 0.3s; }
+        
+        .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--th-bg); padding-bottom: 10px; margin-bottom: 15px; }
+        h1 { color: var(--text-main); margin: 0; font-size: 24px; }
+        
+        .theme-toggle-btn { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .theme-toggle-btn:hover { border-color: #2563eb; }
+
+        .painel-controles { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 15px; background: var(--bg-card); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--border-color); }
+        .info-status { font-size: 14px; color: var(--text-muted); }
         .filtros-box { display: flex; gap: 10px; flex-wrap: wrap; }
-        .input-busca, .select-filtro { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; transition: border-color 0.2s; }
+        .input-busca, .select-filtro { padding: 8px 12px; background-color: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; transition: border-color 0.2s; }
         .input-busca:focus, .select-filtro:focus { border-color: #2563eb; }
         .input-busca { width: 260px; }
-        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        th { background-color: #1e3a8a; color: white; padding: 12px 15px; text-align: left; font-weight: 600; }
-        td { padding: 10px 15px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
-        tr:hover { background-color: #f1f5f9; }
+
+        table { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid var(--border-color); }
+        th { background-color: var(--th-bg); color: var(--th-text); padding: 12px 15px; text-align: left; font-weight: 600; }
+        td { padding: 10px 15px; border-bottom: 1px solid var(--border-color); font-size: 14px; color: var(--text-main); }
+        tr:hover { background-color: var(--row-hover); }
+
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .status-ok { background-color: #d1fae5; color: #065f46; }
-        .status-wait { background-color: #fef3c7; color: #92400e; }
-        .btn-conectar { background-color: #2563eb; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: 500; display: inline-block; }
+        .status-ok { background-color: #065f46; color: #d1fae5; }
+        .status-wait { background-color: #92400e; color: #fef3c7; }
+        .btn-conectar { background-color: #2563eb; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: 500; display: inline-block; transition: background-color 0.2s; }
         .btn-conectar:hover { background-color: #1d4ed8; }
         .linha-oculta { display: none !important; }
+
         .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; vertical-align: middle; }
         .dot-online { background-color: #22c55e; box-shadow: 0 0 6px #22c55e; }
         .dot-offline { background-color: #ef4444; opacity: 0.8; }
     </style>
 </head>
 <body>
-    <h1>$TituloPainel</h1>
+    <div class="header-container">
+        <h1>$TituloPainel</h1>
+        <button class="theme-toggle-btn" id="btnTheme" onclick="alternarTema()">☀️ Modo Claro</button>
+    </div>
+
     <div class="painel-controles">
         <div class="info-status">
             <strong>Exibindo:</strong> <span id="lblTotal">{TOTAL_MAQUINAS}</span> | 
@@ -55,6 +92,7 @@ $HtmlHeader = @"
             </select>
         </div>
     </div>
+
     <table id="tabelaRustDesk">
         <thead>
             <tr>
@@ -92,13 +130,17 @@ if (Test-Path -LiteralPath $PastaDados) {
                     [void]$SetoresEncontrados.Add($Setor)
                 }
 
-                # Ping (Verifica se está online) - Timeout reduzido para evitar lentidão
+                # -------------------------------------------------------------
+                # VALIDAÇÃO DE PING (Verifica se a máquina está ligada na rede)
+                # -------------------------------------------------------------
                 $IsOnline = Test-Connection -ComputerName $Comp -Count 1 -Quiet -ErrorAction SilentlyContinue
                 
                 if ($IsOnline) {
-                    $DotClass = "dot-online"; $StatusTooltip = "Máquina Ligada na Rede"
+                    $DotClass = "dot-online"
+                    $StatusTooltip = "Máquina Ligada na Rede"
                 } else {
-                    $DotClass = "dot-offline"; $StatusTooltip = "Máquina Desligada ou Sem Rede"
+                    $DotClass = "dot-offline"
+                    $StatusTooltip = "Máquina Desligada ou Sem Rede"
                 }
 
                 if ($ID -eq "Aguardando_Sincronizacao" -or [string]::IsNullOrEmpty($ID)) {
@@ -134,6 +176,7 @@ foreach ($S in ($SetoresEncontrados | Sort-Object)) {
 $HtmlFooter = @"
         </tbody>
     </table>
+
     <script>
         function filtrarTabela() {
             const busca = document.getElementById('txtBusca').value.toLowerCase().trim();
@@ -157,8 +200,33 @@ $HtmlFooter = @"
                     linha.classList.add('linha-oculta');
                 }
             });
+
             document.getElementById('lblTotal').innerText = visiveis + " de " + linhas.length + " registro(s)";
         }
+
+        // Lógica de Alternância de Tema (Modo Escuro / Claro)
+        function aplicarTema(tema) {
+            document.documentElement.setAttribute('data-theme', tema);
+            const btn = document.getElementById('btnTheme');
+            if (tema === 'dark') {
+                btn.innerHTML = '☀️ Modo Claro';
+            } else {
+                btn.innerHTML = '🌙 Modo Escuro';
+            }
+            localStorage.setItem('temaPainelRustDesk', tema);
+        }
+
+        function alternarTema() {
+            const temaAtual = document.documentElement.getAttribute('data-theme');
+            const novoTema = temaAtual === 'dark' ? 'light' : 'dark';
+            aplicarTema(novoTema);
+        }
+
+        // Carrega o tema salvo ao abrir a página (Padrão: Dark)
+        (function() {
+            const temaSalvo = localStorage.getItem('temaPainelRustDesk') || 'dark';
+            aplicarTema(temaSalvo);
+        })();
     </script>
 </body>
 </html>
@@ -172,4 +240,5 @@ $HtmlHeader = $HtmlHeader.Replace("{OPCOES_SETORES}", $OpcoesSetoresHtml)
 $HtmlCompleto = $HtmlHeader + $HtmlLines + $HtmlFooter
 
 [System.IO.File]::WriteAllText($CaminhoHtml, $HtmlCompleto, [System.Text.Encoding]::UTF8)
-Write-Host "Painel atualizado em: $CaminhoHtml" -ForegroundColor Green
+
+Write-Host "Painel atualizado com sucesso em: $CaminhoHtml" -ForegroundColor Green
