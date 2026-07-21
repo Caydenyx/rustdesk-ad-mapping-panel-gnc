@@ -8,6 +8,9 @@
 
 Solução corporativa *Open Source* para **instalação, configuração centralizada, inventário dinâmico e monitoramento de status em tempo real (ICMP)** da ferramenta de suporte remoto **RustDesk** integrada ao **Active Directory (AD)**.
 
+<img width="1644" height="957" alt="image" src="https://github.com/user-attachments/assets/2650c74d-7a2d-4cf6-9ea1-ccca94f72d7c" />
+
+
 ---
 
 ## 🚀 Sobre o Projeto & Desafio Resolvido
@@ -46,7 +49,9 @@ Em ambientes corporativos com múltiplos turnos e estações de trabalho compart
            │           └─ Compila o arquivo estático painel.html
            │
            └─► [ 🌐 Painel Web de TI ] ──► (Dispara acesso via rustdesk://[ID])
+
 ```
+
 
 ---
 
@@ -135,6 +140,13 @@ O gerador compila os dados coletados e valida o status online/offline das estaç
 - 🔍 **Busca Global Instantânea:** Campo de texto livre para buscar simultaneamente por nome da máquina, nome do usuário, setor ou ID.
 - 📁 **Filtro por Departamento / Setor:** Dropdown populado automaticamente de acordo com as OUs do Active Directory.
 - ⚡ **Acesso em 1 Clique (`rustdesk://`):** Botão "Conectar" aciona a protocolo personalizado do RustDesk, abrindo a sessão remota no app local do técnico sem precisar digitar o ID manualmente.
+
+## 🌟 Novidades da Versão 1.1
+- **🌙 Modo Escuro (Dark Mode) Nativo:** Interface atualizada com suporte a Dark Mode para maior conforto visual. A preferência é salva automaticamente no navegador (`localStorage`) para persistir durante as atualizações automáticas do painel.
+- **🟢 Status de Rede em Tempo Real:** Mantida a integração com Ping ICMP para visualização imediata de computadores online/offline na rede local.
+  
+- <img width="1819" height="865" alt="image" src="https://github.com/user-attachments/assets/b20fbf4e-449c-44ca-98c6-a0b4c56ae7dc" />
+
 
 ---
 
